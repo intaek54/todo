@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>할 일 목록</title>
+  <!-- 화면이 그려지기 전에 테마를 먼저 정해서 깜빡임을 막아요 -->
+  <script>
+    try {
+      var saved = localStorage.getItem("theme");
+      var dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+    } catch (e) {
+      document.documentElement.dataset.theme = "light";
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <h1>할 일 목록</h1>
+      <button id="theme-btn" title="다크/라이트 모드 바꾸기"></button>
+    </header>
+
+    <!-- 할 일 입력칸 + 마감 날짜 -->
+    <div class="input-row">
+      <input id="todo-input" type="text" placeholder="할 일을 입력하고 Enter" autocomplete="off">
+      <input id="due-input" type="date" title="언제까지? (비워도 돼요)">
+      <button id="add-btn">추가</button>
+    </div>
+
+    <!-- 보기 필터 -->
+    <div class="filters">
+      <button class="filter active" data-filter="all">전체</button>
+      <button class="filter" data-filter="active">해야 할 일</button>
+      <button class="filter" data-filter="done">완료</button>
+    </div>
+
+    <!-- 할 일 목록이 여기에 그려짐 -->
+    <ul id="todo-list"></ul>
+
+    <!-- 아래쪽 정보 -->
+    <div class="footer">
+      <span id="count"></span>
+      <button id="clear-done">완료한 일 지우기</button>
+    </div>
+
+    <p class="hint">글자를 두 번 클릭하면 수정할 수 있어요.</p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

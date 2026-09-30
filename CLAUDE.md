@@ -1,0 +1,3 @@
+- 사용자는 초보자이므로 항상 쉬운 한국어로 설명한다.
+- 빌드 없는 순수 HTML/CSS/JavaScript만 사용하고, index.html을 더블 클릭(file://)해서 열어도 동작해야 한다.
+- 한글 입력(IME 조합) 중 Enter가 두 번 처리되지 않도록 `event.isComposing`을 확인한다.
