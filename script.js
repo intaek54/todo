@@ -103,12 +103,17 @@ function dueLabel(days) {
   return `${-days}일 지남`;
 }
 
-// 남은 날짜에 따라 색 정하기
-// 7일 넘게 남음: 초록 → 가까워질수록 노랑, 주황 → 오늘/지남: 빨강
+// 남은 날짜에 따라 빨간색 진하기 정하기 (그라데이션)
+// 오늘까지/지남: 제일 진한 빨강 → 날짜가 멀수록 점점 연한 빨강 (7일 이상은 가장 연함)
 function dueColor(days) {
-  const danger = Math.min(Math.max((7 - days) / 7, 0), 1); // 0(여유) ~ 1(위험)
-  const hue = 120 * (1 - danger); // 색상환: 120 = 초록, 0 = 빨강
-  return `hsl(${hue}, 75%, 42%)`;
+  const far = Math.min(Math.max(days / 7, 0), 1); // 0(오늘) ~ 1(7일 이상 남음)
+  const lightness = 42 + far * 43; // 42%(진함) ~ 85%(연함)
+  return `hsl(0, 80%, ${lightness}%)`;
+}
+
+// 배경색이 연하면 흰 글자가 안 보이니까 진한 빨강 글자로 바꿔요
+function dueTextColor(days) {
+  return days <= 3 ? "#fff" : "hsl(0, 70%, 30%)";
 }
 
 // ===== 5. 화면 그리기 =====
@@ -172,6 +177,7 @@ function makeItem(todo) {
 
     if (!todo.done) {
       li.style.setProperty("--due-color", dueColor(days));
+      li.style.setProperty("--due-text", dueTextColor(days));
       if (days < 0) li.classList.add("overdue");
     }
   }

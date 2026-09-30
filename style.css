@@ -135,7 +135,7 @@ h1 {
   gap: 10px;
   padding: 10px 8px;
   border-bottom: 1px solid var(--line);
-  /* 마감이 가까울수록 왼쪽 줄 색이 빨개져요 (색은 script.js가 정해요) */
+  /* 마감이 가까울수록 왼쪽 줄 색이 진한 빨강이 돼요 (색은 script.js가 정해요) */
   border-left: 4px solid var(--due-color, transparent);
 }
 
@@ -175,7 +175,7 @@ h1 {
   padding: 3px 8px;
   border-radius: 999px;
   background: var(--due-color);
-  color: #fff;
+  color: var(--due-text, #fff);
   font-size: 13px;
   white-space: nowrap;
 }
