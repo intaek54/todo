@@ -12,9 +12,27 @@ const themeBtn = document.getElementById("theme-btn");
 // 할 일 하나는 { id, text, done, due, hidden } 모양의 객체예요.
 //   due    : 마감 날짜 ("2026-10-05" 같은 글자, 없으면 "")
 //   hidden : 완료한 일을 지웠을 때 true → 전체에서는 안 보이고 완료 탭에만 남아요
-// 따로 저장하지 않으니까 새로고침하면 목록이 비워져요.
-let todos = [];
+// 브라우저에 저장해 두니까 새로고침하거나 창을 닫아도 남아 있어요.
+let todos = load();
 let currentFilter = "all"; // "all" | "active" | "done"
+
+// 브라우저에 저장된 할 일 불러오기
+function load() {
+  try {
+    return JSON.parse(localStorage.getItem("todos")) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// 브라우저에 할 일 저장하기 (render()가 부를 때마다 자동으로 저장돼요)
+function save() {
+  try {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  } catch (e) {
+    // 저장이 막힌 환경이면 그냥 넘어가요.
+  }
+}
 
 // ===== 3. 기능 =====
 function addTodo() {
@@ -95,6 +113,7 @@ function dueColor(days) {
 
 // ===== 5. 화면 그리기 =====
 function render() {
+  save(); // 목록이 바뀌면 항상 render()를 부르니까 여기서 한 번에 저장
   list.innerHTML = "";
 
   // 현재 필터에 맞는 할 일만 고르기
