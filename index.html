@@ -47,8 +47,12 @@
     </div>
 
     <p class="hint">글자를 두 번 클릭하면 수정할 수 있어요.</p>
+    <!-- 저장에 실패하면 여기에 알림이 떠요 -->
+    <p id="status" class="status"></p>
   </main>
 
+  <!-- 수퍼베이스(인터넷 저장소)와 대화하는 도구 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>
 </html>

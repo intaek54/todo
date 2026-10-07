@@ -7,42 +7,98 @@ const count = document.getElementById("count");
 const clearDoneBtn = document.getElementById("clear-done");
 const filterBtns = document.querySelectorAll(".filter");
 const themeBtn = document.getElementById("theme-btn");
+const statusMsg = document.getElementById("status");
 
-// ===== 2. 데이터 =====
+// ===== 2. 수퍼베이스 연결 =====
+// 할 일은 수퍼베이스(인터넷 저장소)의 todos 표에 저장돼요.
+// 그래서 다른 컴퓨터나 휴대폰에서 열어도 같은 목록이 보여요.
+// publishable 키는 웹페이지에 넣어도 되는 공개용 키예요.
+// (service_role / secret 키는 절대 여기에 넣으면 안 돼요!)
+const SUPABASE_URL = "https://hhrblnzgwavzjzwgposm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_SkZfe_8CfvsjXvUTcrUVuw_H5DtJTt-";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== 3. 데이터 =====
 // 할 일 하나는 { id, text, done, due, hidden } 모양의 객체예요.
 //   due    : 마감 날짜 ("2026-10-05" 같은 글자, 없으면 "")
 //   hidden : 완료한 일을 지웠을 때 true → 전체에서는 안 보이고 완료 탭에만 남아요
-// 브라우저에 저장해 두니까 새로고침하거나 창을 닫아도 남아 있어요.
-let todos = load();
+let todos = [];
+let loading = true; // 수퍼베이스에서 불러오는 중인지
 let currentFilter = "all"; // "all" | "active" | "done"
 
-// 브라우저에 저장된 할 일 불러오기
-function load() {
+// 앱의 할 일 → 수퍼베이스 표의 한 줄 (빈 날짜는 null로)
+function toRow(todo) {
+  return { id: todo.id, text: todo.text, done: todo.done, due: todo.due || null, hidden: todo.hidden };
+}
+
+// 수퍼베이스 표의 한 줄 → 앱의 할 일
+function fromRow(row) {
+  return { id: Number(row.id), text: row.text, done: row.done, due: row.due || "", hidden: row.hidden };
+}
+
+// 문제가 생기면 화면 아래에 알려주기
+function showError(message, error) {
+  console.error(message, error);
+  statusMsg.textContent = `${message} (${error.message})`;
+}
+
+// 수퍼베이스에서 할 일 전부 불러오기
+async function load() {
+  await moveOldTodos();
+  const { data, error } = await db.from("todos").select("*").order("id");
+  loading = false;
+  if (error) {
+    showError("할 일을 불러오지 못했어요.", error);
+  } else {
+    todos = data.map(fromRow);
+  }
+  render();
+}
+
+// 예전에 브라우저에만 저장해 둔 할 일이 있으면 수퍼베이스로 한 번 옮겨요
+async function moveOldTodos() {
+  let old = [];
   try {
-    return JSON.parse(localStorage.getItem("todos")) || [];
-  } catch (e) {
-    return [];
+    old = JSON.parse(localStorage.getItem("todos")) || [];
+  } catch (e) {}
+  if (old.length === 0) return;
+
+  const { error } = await db.from("todos").upsert(old.map(toRow));
+  if (error) {
+    showError("예전 할 일을 옮기지 못했어요.", error);
+  } else {
+    try {
+      localStorage.removeItem("todos"); // 다 옮겼으니 브라우저 쪽은 지워요
+    } catch (e) {}
   }
 }
 
-// 브라우저에 할 일 저장하기 (render()가 부를 때마다 자동으로 저장돼요)
-function save() {
-  try {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  } catch (e) {
-    // 저장이 막힌 환경이면 그냥 넘어가요.
-  }
+// 할 일을 수퍼베이스에 저장하기 (없으면 새로 넣고, 있으면 고쳐요)
+async function saveTodos(list) {
+  if (list.length === 0) return;
+  const { error } = await db.from("todos").upsert(list.map(toRow));
+  if (error) showError("저장하지 못했어요.", error);
 }
 
-// ===== 3. 기능 =====
+// 할 일을 수퍼베이스에서 지우기
+async function deleteTodos(ids) {
+  if (ids.length === 0) return;
+  const { error } = await db.from("todos").delete().in("id", ids);
+  if (error) showError("삭제하지 못했어요.", error);
+}
+
+// ===== 4. 기능 =====
+// 화면은 바로 바꾸고(render), 수퍼베이스 저장은 뒤에서 따로 해요.
 function addTodo() {
   const text = input.value.trim();
   if (text === "") return; // 빈 칸이면 추가하지 않음
 
-  todos.push({ id: Date.now(), text: text, done: false, due: dueInput.value, hidden: false });
+  const todo = { id: Date.now(), text: text, done: false, due: dueInput.value, hidden: false };
+  todos.push(todo);
   input.value = "";
   dueInput.value = todayString(); // 다음 할 일도 오늘 날짜부터 시작
   render();
+  saveTodos([todo]);
 }
 
 function toggleTodo(id) {
@@ -50,12 +106,14 @@ function toggleTodo(id) {
   todo.done = !todo.done;
   if (!todo.done) todo.hidden = false; // 완료를 취소하면 전체에 다시 보이게
   render();
+  saveTodos([todo]);
 }
 
 // 진짜로 없애기
 function deleteTodo(id) {
   todos = todos.filter((t) => t.id !== id);
   render();
+  deleteTodos([id]);
 }
 
 // ✕ 버튼을 눌렀을 때
@@ -63,6 +121,7 @@ function removeTodo(todo) {
   if (todo.done && currentFilter !== "done") {
     todo.hidden = true; // 완료한 일은 전체에서만 숨기고 완료 탭에는 남김
     render();
+    saveTodos([todo]);
   } else {
     deleteTodo(todo.id); // 안 끝난 일이거나, 완료 탭에서 지우면 진짜 삭제
   }
@@ -74,11 +133,13 @@ function editTodo(id, newText) {
     deleteTodo(id); // 내용을 다 지우면 할 일도 삭제
     return;
   }
-  todos.find((t) => t.id === id).text = text;
+  const todo = todos.find((t) => t.id === id);
+  todo.text = text;
   render();
+  saveTodos([todo]);
 }
 
-// ===== 4. 남은 날짜 계산 =====
+// ===== 5. 남은 날짜 계산 =====
 // 오늘 날짜를 "2026-09-30" 같은 글자로
 function todayString() {
   const now = new Date();
@@ -116,9 +177,8 @@ function dueTextColor(days) {
   return days <= 3 ? "#fff" : "hsl(0, 70%, 30%)";
 }
 
-// ===== 5. 화면 그리기 =====
+// ===== 6. 화면 그리기 =====
 function render() {
-  save(); // 목록이 바뀌면 항상 render()를 부르니까 여기서 한 번에 저장
   list.innerHTML = "";
 
   // 현재 필터에 맞는 할 일만 고르기
@@ -131,7 +191,7 @@ function render() {
   if (visible.length === 0) {
     const li = document.createElement("li");
     li.className = "empty";
-    li.textContent = "할 일이 없어요.";
+    li.textContent = loading ? "불러오는 중…" : "할 일이 없어요.";
     list.appendChild(li);
   }
 
@@ -217,7 +277,7 @@ function startEdit(li, span, todo) {
   editInput.addEventListener("blur", () => finish(true)); // 다른 곳 클릭해도 저장
 }
 
-// ===== 6. 다크/라이트 모드 =====
+// ===== 7. 다크/라이트 모드 =====
 function showThemeIcon() {
   const isDark = document.documentElement.dataset.theme === "dark";
   themeBtn.textContent = isDark ? "☀️" : "🌙"; // 누르면 바뀔 모드의 아이콘
@@ -232,7 +292,7 @@ themeBtn.addEventListener("click", () => {
   showThemeIcon();
 });
 
-// ===== 7. 이벤트 연결 =====
+// ===== 8. 이벤트 연결 =====
 addBtn.addEventListener("click", addTodo);
 
 // 할 일 칸이나 날짜 칸에서 Enter를 눌러도 추가
@@ -254,17 +314,20 @@ filterBtns.forEach((btn) => {
 });
 
 clearDoneBtn.addEventListener("click", () => {
+  const doneTodos = todos.filter((t) => t.done);
   if (currentFilter === "done") {
     todos = todos.filter((t) => !t.done); // 완료 탭: 진짜 삭제
+    render();
+    deleteTodos(doneTodos.map((t) => t.id));
   } else {
-    todos.forEach((t) => {
-      if (t.done) t.hidden = true; // 전체 탭: 숨기기만 (완료 탭엔 남음)
-    });
+    doneTodos.forEach((t) => (t.hidden = true)); // 전체 탭: 숨기기만 (완료 탭엔 남음)
+    render();
+    saveTodos(doneTodos);
   }
-  render();
 });
 
-// 처음 열었을 때 화면 그리기
+// 처음 열었을 때: 일단 "불러오는 중…"을 보여주고 수퍼베이스에서 가져와요
 dueInput.value = todayString(); // 날짜 칸 기본값: 오늘
 showThemeIcon();
 render();
+load();

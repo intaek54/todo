@@ -230,3 +230,15 @@ h1 {
   color: var(--muted);
   font-size: 13px;
 }
+
+/* 저장 실패 같은 알림 (내용이 없으면 안 보여요) */
+.status {
+  margin: 8px 0 0;
+  text-align: center;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.status:empty {
+  display: none;
+}
