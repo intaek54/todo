@@ -12,11 +12,9 @@ const statusMsg = document.getElementById("status");
 // ===== 2. 수퍼베이스 연결 =====
 // 할 일은 수퍼베이스(인터넷 저장소)의 todos 표에 저장돼요.
 // 그래서 다른 컴퓨터나 휴대폰에서 열어도 같은 목록이 보여요.
-// publishable 키는 웹페이지에 넣어도 되는 공개용 키예요.
-// (service_role / secret 키는 절대 여기에 넣으면 안 돼요!)
-const SUPABASE_URL = "https://hhrblnzgwavzjzwgposm.supabase.co";
-const SUPABASE_KEY = "sb_publishable_SkZfe_8CfvsjXvUTcrUVuw_H5DtJTt-";
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// 접속 주소와 열쇠(SUPABASE_URL, SUPABASE_KEY)는 config.js에 있어요.
+// 인터넷이 끊겨서 수퍼베이스 도구를 못 불러왔으면 db는 null이에요.
+const db = window.supabase ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // ===== 3. 데이터 =====
 // 할 일 하나는 { id, text, done, due, hidden } 모양의 객체예요.
@@ -42,8 +40,19 @@ function showError(message, error) {
   statusMsg.textContent = `${message} (${error.message})`;
 }
 
+// 잘 저장되면 이전 오류 알림은 지워요
+function clearError() {
+  statusMsg.textContent = "";
+}
+
 // 수퍼베이스에서 할 일 전부 불러오기
 async function load() {
+  if (!db) {
+    loading = false;
+    showError("수퍼베이스에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.", { message: "도구를 불러오지 못함" });
+    render();
+    return;
+  }
   await moveOldTodos();
   const { data, error } = await db.from("todos").select("*").order("id");
   loading = false;
@@ -52,6 +61,15 @@ async function load() {
   } else {
     todos = data.map(fromRow);
   }
+  render();
+}
+
+// 저장/삭제가 실패하면 화면이 실제 저장된 내용과 달라지니까,
+// 수퍼베이스에 진짜 저장된 내용으로 다시 불러와요.
+async function reloadAfterError() {
+  const { data, error } = await db.from("todos").select("*").order("id");
+  if (error) return; // 다시 불러오기도 실패하면 오류 알림만 남겨둬요
+  todos = data.map(fromRow);
   render();
 }
 
@@ -75,16 +93,26 @@ async function moveOldTodos() {
 
 // 할 일을 수퍼베이스에 저장하기 (없으면 새로 넣고, 있으면 고쳐요)
 async function saveTodos(list) {
-  if (list.length === 0) return;
+  if (list.length === 0 || !db) return;
   const { error } = await db.from("todos").upsert(list.map(toRow));
-  if (error) showError("저장하지 못했어요.", error);
+  if (error) {
+    showError("저장하지 못했어요.", error);
+    reloadAfterError();
+  } else {
+    clearError();
+  }
 }
 
 // 할 일을 수퍼베이스에서 지우기
 async function deleteTodos(ids) {
-  if (ids.length === 0) return;
+  if (ids.length === 0 || !db) return;
   const { error } = await db.from("todos").delete().in("id", ids);
-  if (error) showError("삭제하지 못했어요.", error);
+  if (error) {
+    showError("삭제하지 못했어요.", error);
+    reloadAfterError();
+  } else {
+    clearError();
+  }
 }
 
 // ===== 4. 기능 =====
