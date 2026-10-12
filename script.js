@@ -46,7 +46,8 @@ function toRow(todo) {
     due: todo.due || null,
     hidden: todo.hidden,
     author: todo.author || null,
-    progress: todo.progress,
+    // 진행률이 없는 옛날 할 일은 완료면 100%, 아니면 0%로 채워요
+    progress: typeof todo.progress === "number" ? todo.progress : todo.done ? 100 : 0,
   };
 }
 
@@ -321,7 +322,7 @@ function makeItem(todo) {
   const span = document.createElement("span");
   span.className = "text";
   span.textContent = todo.text;
-  span.addEventListener("dblclick", () => startEdit(li, span, todo));
+  span.addEventListener("dblclick", () => startEdit(span, todo));
 
   // 할 일 글자와 작성자 이름을 위아래로 묶어요
   const body = document.createElement("div");
@@ -402,7 +403,7 @@ function makeProgress(todo) {
 }
 
 // 글자를 입력칸으로 바꿔서 수정하기
-function startEdit(li, span, todo) {
+function startEdit(span, todo) {
   const editInput = document.createElement("input");
   editInput.className = "edit";
   editInput.value = todo.text;
