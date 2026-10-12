@@ -74,6 +74,31 @@ h1 {
 }
 
 /* 입력칸 */
+/* 작성자 이름 칸 */
+.author-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.author-row label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.author-row input {
+  flex: 1;
+  min-width: 0;
+  max-width: 200px;
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
 .input-row {
   display: flex;
   flex-wrap: wrap;
@@ -102,6 +127,29 @@ h1 {
   color: #fff;
 }
 
+/* 마감 날짜 빠른 버튼 */
+.quick-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.quick-date {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* 지금 날짜 칸에 들어 있는 값과 같은 버튼은 색칠해요 */
+.quick-date.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* 필터 버튼 */
 .filters {
   display: flex;
@@ -122,6 +170,29 @@ h1 {
   color: #fff;
 }
 
+/* 이름으로 보는 중일 때 나오는 알림 */
+.author-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -6px 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--line);
+  font-size: 14px;
+}
+
+.author-filter[hidden] {
+  display: none;
+}
+
+#author-filter-clear {
+  border: none;
+  background: none;
+  color: var(--accent);
+}
+
 /* 할 일 목록 */
 #todo-list {
   list-style: none;
@@ -135,7 +206,7 @@ h1 {
   gap: 10px;
   padding: 10px 8px;
   border-bottom: 1px solid var(--line);
-  /* 마감이 가까울수록 왼쪽 줄 색이 진한 빨강이 돼요 (색은 script.js가 정해요) */
+  /* 마감이 가까우면 빨강, 많이 남으면 초록으로 왼쪽 줄 색이 바뀌어요 (색은 script.js가 정해요) */
   border-left: 4px solid var(--due-color, transparent);
 }
 
@@ -149,9 +220,34 @@ h1 {
   height: 18px;
 }
 
-.todo .text {
+/* 할 일 글자 + 작성자 이름을 위아래로 묶는 칸 */
+.todo .body {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.todo .text {
   word-break: break-all;
+}
+
+/* 할 일 아래 작은 작성자 이름 */
+.todo .author {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.todo .author:hover {
+  text-decoration: underline;
 }
 
 .todo.done .text {
@@ -177,6 +273,7 @@ h1 {
   background: var(--due-color);
   color: var(--due-text, #fff);
   font-size: 13px;
+  font-weight: 600; /* 색 위에서도 글자가 또렷하게 */
   white-space: nowrap;
 }
 
@@ -241,4 +338,39 @@ h1 {
 
 .status:empty {
   display: none;
+}
+
+/* 진행률 슬라이더 (할 일 줄 맨 오른쪽, 볼륨 조절처럼 생겼어요) */
+.progress {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress input[type="range"] {
+  width: 80px;
+  margin: 0;
+  accent-color: var(--accent); /* 채워진 부분 색 */
+  cursor: pointer;
+}
+
+.progress .percent {
+  width: 36px;
+  text-align: right;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums; /* 숫자가 바뀌어도 폭이 같게 */
+}
+
+/* 완료한 일은 100%를 초록으로 */
+.todo.done .progress input[type="range"] {
+  accent-color: #16a34a;
+}
+
+/* 휴대폰처럼 좁은 화면에서는 슬라이더를 조금 짧게 */
+@media (max-width: 480px) {
+  .progress input[type="range"] {
+    width: 56px;
+  }
 }
